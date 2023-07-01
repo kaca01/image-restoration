@@ -2,9 +2,9 @@ import kaggle
 import os
 
 # this will install dataset to your local machine
-# this dataset is not too big so it is safe to install it
+# this dataset is not too big, so it is safe to install it
 
-# later, we will add variuous datasets here
+# later, we will add various datasets here
 dataset_id = 'akhileshdkapse/super-image-resolution'
 output_dir = 'datasets'
 
