@@ -14,6 +14,18 @@ def scale_images(images):
 def prepare_images(images):
     scaled_images = scale_images(images)
 
+    # TODO : if the system is too slow implement this
+    # cache_file = 'cached_images.pkl'
+    # try:
+    #     # Load cached images
+    #     with open(cache_file, 'rb') as f:
+    #         scaled_images = pickle.load(f)
+    # except FileNotFoundError:
+    #     # Cache not found, process the images and save to cache
+    #     scaled_images = scale_images(images)
+    #     with open(cache_file, 'wb') as f:
+    #         pickle.dump(scaled_images, f)
+
     random.shuffle(scaled_images)
 
     # batch the images into 128 images per sample
