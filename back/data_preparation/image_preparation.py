@@ -1,61 +1,37 @@
 import numpy as np
 from sklearn.utils import shuffle
+import random
 
 
-def scale_images(data):
+def scale_images(images):
     scaled_images = []
-    for image in data:
-        scaled_image = image / 255.0
+    for image in images:
+        scaled_image = image / 255
         scaled_images.append(scaled_image)
-    return np.array(scaled_images)
+    return scaled_images
 
 
 def prepare_images(images):
-    # image_array = np.array(images)
-    #
-    # # Scale the images (preprocessing step)
-    # scaled_images = scale_images(image_array)
-    #
-    # # Shuffle the images
-    # shuffled_images = shuffle(scaled_images)  # if needed
-    #
-    # # Batch the images
-    # batch_size = 128
-    # num_samples = shuffled_images.shape[0]
-    # num_batches = num_samples // batch_size
-    #
-    # batches = np.array_split(shuffled_images, num_batches)
-    #
-    # # Prefetch the batches
-    # prefetched_batches = [batch for batch in batches]
-    # print(prefetched_batches)
-    # return prefetched_batches
+    scaled_images = scale_images(images)
 
-    image_array = np.array(images)
+    # TODO : if the system is too slow implement this
+    # cache_file = 'cached_images.pkl'
+    # try:
+    #     # Load cached images
+    #     with open(cache_file, 'rb') as f:
+    #         scaled_images = pickle.load(f)
+    # except FileNotFoundError:
+    #     # Cache not found, process the images and save to cache
+    #     scaled_images = scale_images(images)
+    #     with open(cache_file, 'wb') as f:
+    #         pickle.dump(scaled_images, f)
 
-    # Scale the images (preprocessing step)
-    scaled_images = scale_images(image_array)  # replace 'scale_images' with your own scaling function
+    random.shuffle(scaled_images)
 
-    # Shuffle the images
-    shuffled_images = shuffle(scaled_images)  # if needed
-
-    # Calculate the number of samples and batches
-    num_samples = len(shuffled_images)
+    # batch the images into 128 images per sample
     batch_size = 128
-    num_batches = num_samples // batch_size
+    batched_images = [scaled_images[i:i+batch_size] for i in range(0, len(scaled_images), batch_size)]
 
-    # Check if the number of batches is greater than zero
-    if num_batches > 0:
-        batches = np.array_split(shuffled_images, num_batches)
-
-        # Prefetch the batches
-        prefetched_batches = [batch for batch in batches]
-
-        # Now you can iterate over the prefetched batches and perform further operations
-        for batch in prefetched_batches:
-            pass
-        return prefetched_batches
-    # Perform operations on the batch
-    # ...
-    else:
-        print("Number of samples is less than the batch size.")
+    # Reduce the likelihood of bottlenecking
+    prefetched_batches = [batched_images[i:i+64] for i in range(0, len(batched_images), 64)]
+    return prefetched_batches
