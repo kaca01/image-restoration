@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from data_preparation.dependencies_and_data import get_hr_images
+from skimage.transform import resize
 
 
 def convert_images_to_tensors(image_list):
@@ -35,22 +36,36 @@ class GAN(tf.keras.models.Model):
 	def train_step(self, batch):
 		# Get the data
 		images = get_hr_images()
+		images = images[:128]
+		print("lennn")
+		print(len(images))
 		image_shape = images[0].shape
-		num_channels = image_shape[-1]  # Last dimension is the number of color channels
+		print("images shapeee")
+		print(images[0].shape)
+		image_array = np.array(images)
+		reshaped_array = np.expand_dims(image_array[:, :, :, 0], axis=-1)
+		print(reshaped_array.shape)
+		new_shape = (128, 28, 28, 1)
 
-		# Resize images to a consistent shape (e.g., 256x256)
-		resized_images = [tf.image.resize(image, (128, 128)) for image in images]
+		# Reshape the array to (128, 256, 256)
+		reshaped_array = np.squeeze(reshaped_array)
 
-		real_images = convert_images_to_tensors(resized_images)
-		print(type(batch))
-		print(batch)
+		# Resize the array to (128, 28, 28)
+		resized_array = np.zeros((new_shape[0], new_shape[1], new_shape[2]))
+		for i in range(new_shape[0]):
+			resized_array[i] = resize(reshaped_array[i], (new_shape[1], new_shape[2]))
+
+		# Add the last dimension back to the array to have shape (128, 28, 28, 1)
+		final_array = np.expand_dims(resized_array, axis=-1)
+		real_images = final_array
+		print(final_array.shape)
 		fake_images = self.generator(tf.random.normal((128, 128, 1)), training=False)
-
+		print(fake_images)
 		# Train the discriminator
 		with tf.GradientTape() as d_tape:
 			# Pass the real and fake images to the discriminator model
+			yhat_real = self.discriminator(real_images, training=True)
 			yhat_fake = self.discriminator(fake_images, training=True)
-			yhat_real = self.discriminator(real_images[0], training=True)
 			yhat_realfake = tf.concat([yhat_real, yhat_fake], axis=0)
 
 			# Create labels for real and fakes images
@@ -71,7 +86,7 @@ class GAN(tf.keras.models.Model):
 		# Train the generator
 		with tf.GradientTape() as g_tape:
 			# Generate some new images
-			gen_images = self.generator(tf.random.normal((128, 256, 256, 1)), training=True)
+			gen_images = self.generator(tf.random.normal((128, 28, 28, 1)), training=True)
 
 			# Create the predicted labels
 			predicted_labels = self.discriminator(gen_images, training=False)
