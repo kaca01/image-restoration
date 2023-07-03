@@ -19,6 +19,7 @@ class GAN(tf.keras.models.Model):
 	def __init__(self, generator, discriminator, *args, **kwargs):
 		# pass through args and kwargs to base class
 		super().__init__(*args, **kwargs)
+		tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
 		# create attributes for gen and disc
 		self.generator = generator
@@ -26,13 +27,18 @@ class GAN(tf.keras.models.Model):
 		# optimizers and losses
 		self.g_opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
 		self.d_opt = tf.keras.optimizers.Adam(learning_rate=0.00001)
-		self.g_loss = tf.keras.losses.BinaryCrossentropy()
-		self.d_loss = tf.keras.losses.BinaryCrossentropy()
+		self.g_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+		self.d_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 	def compile(self, *args, **kwargs):
 		# Compile with base class
 		super().compile(*args, **kwargs)
 
+	@tf.custom_gradient
+	def gradient_checkpointing(x):
+		return tf.identity(x), lambda dy: dy
+
+	@tf.function
 	def train_step(self, batch):
 		# Get the data
 		low_res_images = get_lr_images()
@@ -66,7 +72,14 @@ class GAN(tf.keras.models.Model):
 		low_res_images = np.array(low_res_images)
 		low_res_images = low_res_images.reshape(-1, 128)
 		fake_images = self.generator(low_res_images, training=False)
+		del final_array
+		del resized_array
+		del reshaped_array
+		del new_shape
+		del image_array
+		del images
 		# Train the discriminator
+		print("Pocinje trening discriminatora")
 		with tf.GradientTape() as d_tape:
 			# Pass the real and fake images to the discriminator model
 			yhat_real = self.discriminator(real_images, training=True)
@@ -93,8 +106,9 @@ class GAN(tf.keras.models.Model):
 		# Apply backpropagation - nn learn
 		dgrad = d_tape.gradient(total_d_loss, self.discriminator.trainable_variables)
 		self.d_opt.apply_gradients(zip(dgrad, self.discriminator.trainable_variables))
-
+		del dgrad
 		# Train the generator
+		print("Pocinje trening generatora")
 		with tf.GradientTape() as g_tape:
 			# Generate some new images
 			gen_images = self.generator(low_res_images, training=True)
@@ -104,9 +118,12 @@ class GAN(tf.keras.models.Model):
 
 			# Calculate loss - trick to training to fake out the discriminator
 			total_g_loss = self.g_loss(tf.zeros_like(predicted_labels), predicted_labels)
+			del gen_images
+			del predicted_labels
 
 		# Apply backprop
 		ggrad = g_tape.gradient(total_g_loss, self.generator.trainable_variables)
 		self.g_opt.apply_gradients(zip(ggrad, self.generator.trainable_variables))
-
+		del ggrad
+		del low_res_images
 		return {"d_loss": total_d_loss, "g_loss": total_g_loss}
