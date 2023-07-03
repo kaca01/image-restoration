@@ -35,3 +35,10 @@ def prepare_images(images):
     # Reduce the likelihood of bottlenecking
     prefetched_batches = [batched_images[i:i+64] for i in range(0, len(batched_images), 64)]
     return prefetched_batches
+
+
+def reshape_images(high_img):
+    train_high_image = high_img[:700]
+    print(train_high_image.shape)
+    train_high_image = np.reshape(train_high_image, (len(train_high_image), 256, 256, 3))
+    return train_high_image
