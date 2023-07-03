@@ -27,7 +27,7 @@ def get_images(dataset_dir):
     # display one of the images
     plt.imshow(images[0])
     plt.axis('off')
-    plt.show()
+    # plt.show()
     return images
 
 
