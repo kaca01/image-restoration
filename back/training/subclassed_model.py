@@ -20,7 +20,6 @@ class GAN(tf.keras.models.Model):
 	def __init__(self, generator, discriminator, *args, **kwargs):
 		# pass through args and kwargs to base class
 		super().__init__(*args, **kwargs)
-		tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
 		# create attributes for gen and disc
 		self.generator = generator
@@ -28,106 +27,70 @@ class GAN(tf.keras.models.Model):
 		# optimizers and losses
 		self.g_opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
 		self.d_opt = tf.keras.optimizers.Adam(learning_rate=0.00001)
-		self.g_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-		self.d_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+		self.g_loss = tf.keras.losses.BinaryCrossentropy()
+		self.d_loss = tf.keras.losses.BinaryCrossentropy()
 
 	def compile(self, *args, **kwargs):
 		# Compile with base class
 		super().compile(*args, **kwargs)
 
-	@tf.custom_gradient
-	def gradient_checkpointing(x):
-		return tf.identity(x), lambda dy: dy
+	# @tf.custom_gradient
+	# def gradient_checkpointing(x):
+	# 	return tf.identity(x), lambda dy: dy
 
-	@tf.function
+	# @tf.function
 	def train_step(self, batch):
-		# Get the data
-		low_res_images = get_lr_images()
-		low_res_images = low_res_images[:128]
-		images = get_hr_images()
-		images = images[:128]
-		image_shape = images[0].shape
-		image_array = np.array(images)
-		# image_array2 = np.array(low_res_images)
-		reshaped_array = np.expand_dims(image_array[:, :, :, 0], axis=-1)
-		# reshaped_array2 = np.expand_dims(image_array2[:, :, :, 0], axis=-1)
-		# print(reshaped_array.shape)
-		new_shape = (128, 28, 28, 1)
+		# batches
+		low_res_images = get_lr_images()[:32]
+		images = get_hr_images()[:32]
 
-		# Reshape the array to (128, 256, 256)
-		reshaped_array = np.squeeze(reshaped_array)
-		# reshaped_array2 = np.squeeze(reshaped_array2)
 
-		# Resize the array to (128, 28, 28)
-		resized_array = np.zeros((new_shape[0], new_shape[1], new_shape[2]))
-		# resized_array2 = np.zeros((new_shape[0], new_shape[1], new_shape[2]))
-		for i in range(new_shape[0]):
-			resized_array[i] = resize(reshaped_array[i], (new_shape[1], new_shape[2]))
-			# resized_array2[i] = resize(reshaped_array2[i], (new_shape[1], new_shape[2]))
-
-		# Add the last dimension back to the array to have shape (128, 28, 28, 1)
-		final_array = np.expand_dims(resized_array, axis=-1)
-		# final_array2 = np.expand_dims(resized_array2, axis=-1)
-		real_images = final_array
-		# fake_images = self.generator(tf.random.normal((128, 128, 1)), training=False)
-		low_res_images = np.array(low_res_images)
-		low_res_images = low_res_images.reshape(-1, 128)
-		fake_images = self.generator(low_res_images, training=False)
-		del final_array
-		del resized_array
-		del reshaped_array
-		del new_shape
-		del image_array
+		# preprocessing data
+		resized_images = np.array([resize(image[:, :, 0], (28, 28)) for image in images])
+		real_images = np.expand_dims(resized_images, axis=-1)
+		del resized_images
 		del images
-		# Train the discriminator
-		print("Pocinje trening discriminatora")
+
+		# generate fake images
+		low_res_images = np.array(low_res_images).reshape(-1, 128)
+		fake_images = self.generator(low_res_images, training=False)
+
+		print("discriminator")
 		with tf.GradientTape() as d_tape:
-			# Pass the real and fake images to the discriminator model
 			yhat_real = self.discriminator(real_images, training=True)
 			yhat_fake = self.discriminator(fake_images, training=True)
 			yhat_realfake = tf.concat([yhat_real, yhat_fake], axis=0)
-
-			# Create labels for real and fakes images
-			y_realfake = tf.concat([tf.zeros_like(yhat_real), tf.ones_like(yhat_fake)], axis=0)
-
-			# Add some noise to the TRUE outputs
-			noise_real = 0.15 * tf.random.uniform(tf.shape(yhat_real))
-			noise_fake = -0.15 * tf.random.uniform(tf.shape(yhat_fake))
+			y_realfake = tf.concat([tf.zeros_like(yhat_real, dtype=tf.float32), tf.ones_like(yhat_fake, dtype=tf.float32)], axis=0)
+			noise_real = 0.15 * tf.random.uniform(tf.shape(yhat_real), dtype=tf.float32)
+			noise_fake = -0.15 * tf.random.uniform(tf.shape(yhat_fake), dtype=tf.float32)
 			y_realfake += tf.concat([noise_real, noise_fake], axis=0)
-
-			# Calculate loss - BINARYCROSS
 			total_d_loss = self.d_loss(y_realfake, yhat_realfake)
-
-			del yhat_real
-			del yhat_fake
-			del noise_real
-			del noise_fake
-			del yhat_realfake
-
-		# Apply backpropagation - nn learn
+		
+		del yhat_real
+		del real_images
+		del fake_images
+		del yhat_fake
+		del yhat_realfake
+		del y_realfake
+		del noise_real
+		del noise_fake
 		dgrad = d_tape.gradient(total_d_loss, self.discriminator.trainable_variables)
 		self.d_opt.apply_gradients(zip(dgrad, self.discriminator.trainable_variables))
-		del dgrad
 		del d_tape
-		# Train the generator
-		print("Pocinje trening generatora")
+		del dgrad
+
+		print("generator")
 		with tf.GradientTape() as g_tape:
-			# Generate some new images
 			gen_images = self.generator(low_res_images, training=True)
-
-			# Create the predicted labels
+			del low_res_images
 			predicted_labels = self.discriminator(gen_images, training=False)
-
-			# Calculate loss - trick to training to fake out the discriminator
 			total_g_loss = self.g_loss(tf.zeros_like(predicted_labels), predicted_labels)
-			del gen_images
 			del predicted_labels
 
-		# Apply backprop
 		ggrad = g_tape.gradient(total_g_loss, self.generator.trainable_variables)
+		del g_tape
 		self.g_opt.apply_gradients(zip(ggrad, self.generator.trainable_variables))
 		del ggrad
-		del low_res_images
-		del g_tape
-		gc.collect()
+
 		return {"d_loss": total_d_loss, "g_loss": total_g_loss}
+
