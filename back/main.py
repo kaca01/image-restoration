@@ -28,4 +28,4 @@ gan = GAN(gen_model, disc_model)
 gan.compile()
 
 # Recommend 2000 epochs
-hist = gan.fit(prefetched_batches, epochs=20, callbacks=[ModelMonitor()])
+hist = gan.fit(prefetched_batches, epochs=20, batch_size=2, callbacks=[ModelMonitor()])

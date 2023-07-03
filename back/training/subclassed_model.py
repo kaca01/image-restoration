@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from data_preparation.dependencies_and_data import get_hr_images, get_lr_images
 from skimage.transform import resize
+import gc
 
 
 def convert_images_to_tensors(image_list):
@@ -107,6 +108,7 @@ class GAN(tf.keras.models.Model):
 		dgrad = d_tape.gradient(total_d_loss, self.discriminator.trainable_variables)
 		self.d_opt.apply_gradients(zip(dgrad, self.discriminator.trainable_variables))
 		del dgrad
+		del d_tape
 		# Train the generator
 		print("Pocinje trening generatora")
 		with tf.GradientTape() as g_tape:
@@ -126,4 +128,6 @@ class GAN(tf.keras.models.Model):
 		self.g_opt.apply_gradients(zip(ggrad, self.generator.trainable_variables))
 		del ggrad
 		del low_res_images
+		del g_tape
+		gc.collect()
 		return {"d_loss": total_d_loss, "g_loss": total_g_loss}

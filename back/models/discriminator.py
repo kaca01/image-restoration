@@ -11,20 +11,20 @@ class Discriminator:
         self.model.add(LeakyReLU(0.2))
         self.model.add(Dropout(0.4))
 
-        # Second Conv Block
-        self.model.add(Conv2D(64, 5))
-        self.model.add(LeakyReLU(0.2))
-        self.model.add(Dropout(0.4))
+        # # Second Conv Block
+        # self.model.add(Conv2D(64, 5))
+        # self.model.add(LeakyReLU(0.2))
+        # self.model.add(Dropout(0.4))
 
-        # Third Conv Block
-        self.model.add(Conv2D(128, 5))
-        self.model.add(LeakyReLU(0.2))
-        self.model.add(Dropout(0.4))
+        # # Third Conv Block
+        # self.model.add(Conv2D(128, 5))
+        # self.model.add(LeakyReLU(0.2))
+        # self.model.add(Dropout(0.4))
 
-        # Fourth Conv Block
-        self.model.add(Conv2D(256, 5))
-        self.model.add(LeakyReLU(0.2))
-        self.model.add(Dropout(0.4))
+        # # Fourth Conv Block
+        # self.model.add(Conv2D(256, 5))
+        # self.model.add(LeakyReLU(0.2))
+        # self.model.add(Dropout(0.4))
 
         # Flatten then pass to dense layer
         self.model.add(Flatten())
