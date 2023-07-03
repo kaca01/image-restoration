@@ -1,5 +1,5 @@
-from data_preparation.dependencies_and_data import preparation, get_hr_images, high
-from data_preparation.image_preparation import prepare_images, reshape_images
+from data_preparation.dependencies_and_data import preparation, get_hr_images
+from data_preparation.image_preparation import prepare_images
 from models.generator import Generator
 from models.discriminator import Discriminator
 from training.subclassed_model import GAN
