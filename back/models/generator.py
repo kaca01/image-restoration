@@ -27,7 +27,7 @@ class Generator:
         return up_sample
 
     def model(self):
-        inputs = layers.Input(shape=[self.size, self.size, 3])
+        inputs = layers.Input(shape=[self.size, self.size, 1])
 
         # down sampling
         d1 = self.down(128, (3, 3), False)(inputs)
@@ -47,12 +47,12 @@ class Generator:
         u4 = layers.concatenate([u4, d1])
         u5 = self.up(3, (3, 3), False)(u4)
         u5 = layers.concatenate([u5, inputs])
-        output = layers.Conv2D(3, (2, 2), strides=1, padding='same')(u5)
+        output = layers.Conv2D(1, (2, 2), strides=1, padding='same')(u5)
         return tf.keras.Model(inputs=inputs, outputs=output)
 
     def show_generated_images(self, generator):
         # Generate image with generator
-        generated_images = generator.predict(np.random.randn(self.num_images, self.size, self.size, 3))
+        generated_images = generator.predict(np.random.randn(self.num_images, self.size, self.size, 1))
         fig, axes = plt.subplots(1, self.num_images, figsize=(10, 4))
 
         # Show all images
@@ -63,8 +63,3 @@ class Generator:
             axes[i].axis('off')
 
         plt.show()
-
-
-# generator.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='mean_absolute_error', metrics=['acc'])
-
-# generator.fit(train_low_image, train_high_image, epochs=20, batch_size=1, validation_data=(validation_low_image,validation_high_image))
