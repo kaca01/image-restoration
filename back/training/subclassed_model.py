@@ -1,4 +1,16 @@
 import tensorflow as tf
+import numpy as np
+from data_preparation.dependencies_and_data import get_hr_images
+
+
+def convert_images_to_tensors(image_list):
+	tensor_list = []
+
+	for image in image_list:
+		image_tensor = tf.convert_to_tensor(image, dtype=tf.float32)
+		tensor_list.append(image_tensor)
+
+	return tuple(tensor_list)
 
 
 # subclassed model
@@ -22,14 +34,23 @@ class GAN(tf.keras.models.Model):
 
 	def train_step(self, batch):
 		# Get the data
-		real_images = batch
-		fake_images = self.generator(tf.random.normal((128, 256, 256, 1)), training=False)
+		images = get_hr_images()
+		image_shape = images[0].shape
+		num_channels = image_shape[-1]  # Last dimension is the number of color channels
+
+		# Resize images to a consistent shape (e.g., 256x256)
+		resized_images = [tf.image.resize(image, (128, 128)) for image in images]
+
+		real_images = convert_images_to_tensors(resized_images)
+		print(type(batch))
+		print(batch)
+		fake_images = self.generator(tf.random.normal((128, 128, 1)), training=False)
 
 		# Train the discriminator
 		with tf.GradientTape() as d_tape:
 			# Pass the real and fake images to the discriminator model
 			yhat_fake = self.discriminator(fake_images, training=True)
-			yhat_real = self.discriminator(real_images, training=True)
+			yhat_real = self.discriminator(real_images[0], training=True)
 			yhat_realfake = tf.concat([yhat_real, yhat_fake], axis=0)
 
 			# Create labels for real and fakes images

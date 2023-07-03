@@ -9,10 +9,11 @@ preparation()
 # images = high()
 # prefetched_batches = reshape_images(images)
 images = get_hr_images()
+print(images[0])
+print("-" * 100)
 prefetched_batches = prepare_images(images)
-
 generator = Generator()
-gen_model = generator.model()
+gen_model = generator.get_model()
 # gen_model.summary()
 # generator.show_generated_images(gen_model)
 

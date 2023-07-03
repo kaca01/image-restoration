@@ -7,7 +7,7 @@ class Discriminator:
         self.model = Sequential()
 
         # First Conv Block
-        self.model.add(Conv2D(32, 5, input_shape=(128, 256, 256, 1)))
+        self.model.add(Conv2D(32, 5, input_shape=(28, 28, 1)))
         self.model.add(LeakyReLU(0.2))
         self.model.add(Dropout(0.4))
 

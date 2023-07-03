@@ -1,65 +1,37 @@
-from keras import layers
-import tensorflow as tf
-import numpy as np
-from matplotlib import pyplot as plt
-from PIL import Image
+from keras.models import Sequential
+from keras.layers import Conv2D, LeakyReLU, Dropout, Flatten, Dense, Reshape, UpSampling2D
 
 
 class Generator:
     def __init__(self):
-        self.size = 256
-        self.num_images = 4
+        self.model = Sequential()
 
-    def down(self, filters, kernel_size, apply_batch_normalization=True):
-        down_sample = tf.keras.models.Sequential()
-        down_sample.add(layers.Conv2D(filters, kernel_size, padding='same', strides=2))
-        if apply_batch_normalization:
-            down_sample.add(layers.BatchNormalization())
-        down_sample.add(layers.LeakyReLU())
-        return down_sample
+        # Takes in random values and reshapes it to 7x7x128
+        # Beginnings of a generated image
+        self.model.add(Dense(7 * 7 * 128, input_dim=128))
+        self.model.add(LeakyReLU(0.2))
+        self.model.add(Reshape((7, 7, 128)))
 
-    def up(self, filters, kernel_size, dropout=False):
-        up_sample = tf.keras.models.Sequential()
-        up_sample.add(layers.Conv2DTranspose(filters, kernel_size, padding='same', strides=2))
-        if dropout:
-            up_sample.dropout(0.25)
-        up_sample.add(layers.LeakyReLU())
-        return up_sample
+        # Upsampling block 1
+        self.model.add(UpSampling2D())
+        self.model.add(Conv2D(128, 5, padding='same'))
+        self.model.add(LeakyReLU(0.2))
 
-    def model(self):
-        inputs = layers.Input(shape=[self.size, self.size, 1])
+        # Upsampling block 2
+        self.model.add(UpSampling2D())
+        self.model.add(Conv2D(128, 5, padding='same'))
+        self.model.add(LeakyReLU(0.2))
 
-        # down sampling
-        d1 = self.down(128, (3, 3), False)(inputs)
-        d2 = self.down(128, (3, 3), False)(d1)
-        d3 = self.down(256, (3, 3), True)(d2)
-        d4 = self.down(512, (3, 3), True)(d3)
-        d5 = self.down(512, (3, 3), True)(d4)
+        # Convolutional block 1
+        self.model.add(Conv2D(128, 4, padding='same'))
+        self.model.add(LeakyReLU(0.2))
 
-        # up sampling
-        u1 = self.up(512, (3, 3), False)(d5)
-        u1 = layers.concatenate([u1, d4])
-        u2 = self.up(256, (3, 3), False)(u1)
-        u2 = layers.concatenate([u2, d3])
-        u3 = self.up(128, (3, 3), False)(u2)
-        u3 = layers.concatenate([u3, d2])
-        u4 = self.up(128, (3, 3), False)(u3)
-        u4 = layers.concatenate([u4, d1])
-        u5 = self.up(3, (3, 3), False)(u4)
-        u5 = layers.concatenate([u5, inputs])
-        output = layers.Conv2D(1, (2, 2), strides=1, padding='same')(u5)
-        return tf.keras.Model(inputs=inputs, outputs=output)
+        # Convolutional block 2
+        self.model.add(Conv2D(128, 4, padding='same'))
+        self.model.add(LeakyReLU(0.2))
 
-    def show_generated_images(self, generator):
-        # Generate image with generator
-        generated_images = generator.predict(np.random.randn(self.num_images, self.size, self.size, 1))
-        fig, axes = plt.subplots(1, self.num_images, figsize=(10, 4))
+        # Conv layer to get to one channel
+        self.model.add(Conv2D(1, 4, padding='same', activation='sigmoid'))
 
-        # Show all images
-        for i in range(self.num_images):
-            # Converting the generated image into a format acceptable for display in the "PIL" object
-            generated_image_pil = Image.fromarray(np.uint8(generated_images[i] * 255))
-            axes[i].imshow(generated_image_pil)
-            axes[i].axis('off')
-
-        plt.show()
+    def get_model(self):
+        return self.model
