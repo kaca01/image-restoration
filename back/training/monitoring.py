@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 
 
-# This class is used to monitor and record the generated images during each epoch of model training
+# this class is used to monitor and record the generated images during each epoch of model training
 class ModelMonitor(tf.keras.callbacks.Callback):
     def __init__(self, num_img=4, latent_dim=128):
         super().__init__()

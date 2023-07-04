@@ -1,7 +1,5 @@
 import tensorflow as tf
 from tensorflow import keras
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import Conv2D, LeakyReLU, Dropout, Flatten, Dense
 
 
 class Discriminator:
@@ -13,7 +11,7 @@ class Discriminator:
         self.model.add(keras.layers.LeakyReLU(0.2))
         self.model.add(keras.layers.Dropout(0.4))
 
-        # second Conv Block
+        # second conv block
         self.model.add(keras.layers.Conv2D(64, 5))
         self.model.add(keras.layers.LeakyReLU(0.2))
         self.model.add(keras.layers.Dropout(0.4))

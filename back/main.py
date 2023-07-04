@@ -10,7 +10,6 @@ import tensorflow as tf
 preparation()
 
 low_res_images = prepare_images(True)
-		
 high_res_images = prepare_images(False)
 
 # creating models

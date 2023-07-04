@@ -10,7 +10,6 @@ def preparation():
 
     os.environ['KAGGLE_CONFIG_DIR'] = 'C:/Users/User/.kaggle'
 
-
 def image_generator(dataset_dir):
     for filename in os.listdir(dataset_dir):
         if filename.endswith('.jpg') or filename.endswith('.png'):

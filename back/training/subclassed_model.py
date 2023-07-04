@@ -3,7 +3,6 @@ import numpy as np
 from data_preparation.dependencies_and_data import get_hr_images, get_lr_images
 from skimage.transform import resize
 import gc
-import gc
 
 
 def convert_images_to_tensors(image_list):
