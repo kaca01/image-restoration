@@ -24,13 +24,10 @@ def preprocess_images(images, discriminator=True):
     return reshaped_images
 
 
-# subclassed model
 class GAN(tf.keras.models.Model):
     def __init__(self, generator, discriminator, *args, **kwargs):
-        # pass through args and kwargs to base class
         super().__init__(*args, **kwargs)
 
-        # create attributes for gen and disc
         self.generator = generator
         self.discriminator = discriminator
         # optimizers and losses
@@ -40,12 +37,9 @@ class GAN(tf.keras.models.Model):
         self.d_loss = tf.keras.losses.BinaryCrossentropy()
 
     def compile(self, *args, **kwargs):
-        # Compile with base class
         super().compile(*args, **kwargs)
 
-    # @tf.function
     def train_step(self, batch):
-        # batches
         gc.collect()
         print("new train step")
 
@@ -55,25 +49,25 @@ class GAN(tf.keras.models.Model):
         del low_res_batch
         del high_res_batch
 
-        # Generate fake images
+        # generating fake images
         fake_images = self.generator(preprocessed_low_res, training=False)
         print("discriminator")
-        # Train the discriminator
+        # training the discriminator
         with tf.GradientTape() as d_tape:
-            # Pass the real and fake images to the discriminator model
+            # passing the real and fake images to the discriminator model
             yhat_real = self.discriminator(preprocessed_high_res, training=True)
             yhat_fake = self.discriminator(fake_images, training=True)
             yhat_realfake = tf.concat([yhat_real, yhat_fake], axis=0)
 
-            # Create labels for real and fake images
+            # creating labels for real and fake images
             y_realfake = tf.concat([tf.zeros_like(yhat_real), tf.ones_like(yhat_fake)], axis=0)
 
-            # Add some noise to the TRUE outputs
+            # adding some noise to the TRUE outputs
             noise_real = 0.15 * tf.random.uniform(tf.shape(yhat_real))
             noise_fake = -0.15 * tf.random.uniform(tf.shape(yhat_fake))
             y_realfake += tf.cast(tf.concat([noise_real, noise_fake], axis=0), dtype=tf.float16)
 
-            # Calculate discriminator loss
+            # calculating discriminator loss
             total_d_loss = self.d_loss(y_realfake, yhat_realfake)
 
         del yhat_real
@@ -84,27 +78,26 @@ class GAN(tf.keras.models.Model):
         del y_realfake
         del fake_images
         del preprocessed_high_res
-        # Calculate gradients and update discriminator weights
+        # calculating gradients and update discriminator weights
         dgrad = d_tape.gradient(total_d_loss, self.discriminator.trainable_variables)
         del d_tape
         self.d_opt.apply_gradients(zip(dgrad, self.discriminator.trainable_variables))
         del dgrad
         print("generator")
-        # Train the generator
+        # training the generator
         with tf.GradientTape() as g_tape:
-            # Generate some new images
             gen_images = self.generator(preprocessed_low_res, training=True)
 
-            # Create the predicted labels
+            # creating the predicted labels
             predicted_labels = self.discriminator(gen_images, training=False)
 
-            # Calculate generator loss
+            # calculating generator loss
             total_g_loss = self.g_loss(tf.zeros_like(predicted_labels), predicted_labels)
             del preprocessed_low_res
             del predicted_labels
             del gen_images
 
-        # Calculate gradients and update generator weights
+        # calculating gradients and update generator weights
         ggrad = g_tape.gradient(total_g_loss, self.generator.trainable_variables)
         self.g_opt.apply_gradients(zip(ggrad, self.generator.trainable_variables))
         del ggrad
