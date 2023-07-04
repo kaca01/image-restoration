@@ -10,7 +10,8 @@ def preparation():
 
     os.environ['KAGGLE_CONFIG_DIR'] = 'C:/Users/User/.kaggle'
 
-def image_generator(dataset_dir):
+
+def get_images(dataset_dir):
     for filename in os.listdir(dataset_dir):
         if filename.endswith('.jpg') or filename.endswith('.png'):
             image_path = os.path.join(dataset_dir, filename)
@@ -20,9 +21,9 @@ def image_generator(dataset_dir):
 
 def get_lr_images():
     lr_dataset_dir = 'datasets/dataset/train/low_res'
-    return image_generator(lr_dataset_dir)
+    return get_images(lr_dataset_dir)
 
 
 def get_hr_images():
     hr_dataset_dir = 'datasets/dataset/train/high_res'
-    return image_generator(hr_dataset_dir)
+    return get_images(hr_dataset_dir)
